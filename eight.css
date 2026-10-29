@@ -1,0 +1,39 @@
+/* ============ 8D room (eight.js) ============ */
+.e-list { display: flex; flex-direction: column; gap: 6px; max-width: 520px; margin: 14px auto 0; }
+.e-row {
+  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%;
+  background: var(--cardblack); border: 1px solid #ff149344; border-radius: 10px; padding: 6px 10px;
+  color: var(--cream); cursor: pointer; font: inherit;
+}
+.e-row:hover { border-color: var(--pink); box-shadow: var(--glow); }
+.e-row img, .e-row .ph { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #222; }
+.e-row .tx { display: flex; flex-direction: column; min-width: 0; }
+.e-row .nm { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.e-row .ar { font-size: 0.8rem; color: var(--dimtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.e-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 460px; margin: 14px auto 0;
+  border: 2px dashed #ff149366; border-radius: 14px; padding: 30px 16px; cursor: pointer; text-align: center;
+}
+.e-drop:hover, .e-drop.over { border-color: var(--pink); box-shadow: var(--glow); }
+.e-drop .big { font-size: 1.3rem; color: var(--hotpink); }
+
+.e-card {
+  max-width: 520px; margin: 20px auto 0; padding: 18px 16px; text-align: center;
+  background: var(--cardblack); border: 1px solid var(--pink); border-radius: 16px; box-shadow: var(--glow);
+}
+.e-head { position: relative; width: 200px; height: 200px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; }
+.e-ring { position: absolute; inset: 22px; border-radius: 50%; border: 2px dashed #ff149366; }
+.e-you { font-size: 2.6rem; filter: drop-shadow(0 0 8px #ff1493aa); }
+.e-orbit {
+  position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px;
+  border-radius: 50%; overflow: hidden; border: 2px solid var(--hotpink); box-shadow: var(--glow); background: #222;
+  display: flex; align-items: center; justify-content: center; color: var(--pink);
+}
+.e-orbit img { width: 100%; height: 100%; object-fit: cover; }
+.e-title { font-size: 1.2rem; font-weight: bold; color: var(--cream); }
+.e-artist { color: var(--dimtext); margin-bottom: 4px; }
+#e-audio { width: 100%; margin-top: 12px; }
+.e-lbl { margin: 12px 0 6px; }
+.e-tabs { flex-wrap: wrap; justify-content: center; }
+.e-slider { width: 80%; accent-color: var(--pink); }

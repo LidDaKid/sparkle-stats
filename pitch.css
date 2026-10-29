@@ -1,0 +1,20 @@
+/* ============ match the note (pitch.js) ============ */
+.pt-wrap { max-width: 520px; margin: 0 auto; text-align: center; }
+.pt-song { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 6px 0 10px; text-align: left; }
+.pt-song img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 1px solid var(--pink); }
+.pt-song .nm { font-weight: bold; color: var(--cream); }
+.pt-song .ar { font-size: 0.85rem; color: var(--dimtext); }
+.pt-btns { flex-wrap: wrap; justify-content: center; }
+.pt-note {
+  font-family: monospace; font-size: 3rem; font-weight: bold; color: var(--hotpink);
+  text-shadow: var(--glowtext); margin: 14px 0 4px; letter-spacing: 2px;
+}
+.pt-track { position: relative; margin: 6px 6px 30px; }
+.pt-slider { width: 100%; accent-color: var(--pink); height: 34px; cursor: pointer; touch-action: none; }
+.pt-ticks { position: relative; height: 16px; }
+.pt-ticks span { position: absolute; transform: translateX(-50%); font-size: 0.75rem; color: var(--dimtext); }
+.pt-target {
+  position: absolute; top: -40px; width: 4px; height: 30px; margin-left: -2px; border-radius: 2px;
+  background: #fff; box-shadow: 0 0 8px #fff, var(--glow);
+}
+.pt-target::after { content: 'the note'; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #fff; white-space: nowrap; }

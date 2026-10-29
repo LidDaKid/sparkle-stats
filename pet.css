@@ -1,0 +1,92 @@
+/* ============ music pet / listening calendar / save to spotify (pet.js) ============ */
+
+/* ---- pet ---- */
+.mp-stage { position: relative; max-width: 340px; margin: 22px auto 6px; }
+.mp-canvas {
+  display: block; width: 100%; height: auto; image-rendering: pixelated; cursor: pointer;
+  background: radial-gradient(circle at 50% 60%, #2a0a1c 0%, #0a0a0a 70%);
+  border: 1px solid var(--darkpink); border-radius: 14px; box-shadow: var(--glow);
+}
+.mp-bubble {
+  position: absolute; top: -16px; left: 50%; transform: translateX(-50%) scale(0.6); opacity: 0;
+  background: var(--cream); color: #1a0010; font-weight: 800; font-size: 0.85rem; padding: 6px 12px;
+  border-radius: 14px; border: 2px solid var(--pink); white-space: nowrap; pointer-events: none; z-index: 2;
+}
+.mp-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--pink); border-bottom: 0; }
+.mp-bubble.on { animation: mpBubble 2.4s ease forwards; }
+@keyframes mpBubble {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  12% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  20%, 80% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+.mp-full { display: flex; align-items: center; gap: 8px; max-width: 340px; margin: 8px auto 12px; font-size: 0.72rem; color: var(--dimtext); text-transform: uppercase; letter-spacing: 2px; }
+.mp-bar { flex: 1; height: 10px; background: #1a0f15; border: 1px solid #2a1520; border-radius: 6px; overflow: hidden; }
+.mp-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--darkpink), var(--hotpink)); transition: width 0.4s; }
+.mp-stats { grid-template-columns: repeat(3, 1fr); }
+.mp-stats .x-stat { padding: 8px 6px; }
+.mp-name { display: flex; gap: 8px; justify-content: center; margin: 4px 0 16px; flex-wrap: wrap; }
+.mp-name input, .sv-name {
+  background: var(--cardblack); border: 1px solid var(--darkpink); color: var(--cream); padding: 10px 12px;
+  font: inherit; border-radius: 10px; min-width: 0; flex: 1; max-width: 220px;
+}
+.mp-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.mp-food {
+  background: var(--cardblack); border: 1px solid #2a1520; border-radius: 10px; padding: 6px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--cream); font: inherit;
+}
+.mp-food:hover, .mp-food:active { border-color: var(--pink); box-shadow: var(--glow); }
+.mp-food img, .mp-food .nocover { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+.mp-food .nocover { display: flex; align-items: center; justify-content: center; background: #1a0f15; font-size: 1.6rem; color: var(--pink); }
+.mp-food .nm { font-size: 0.68rem; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.mp-meals { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+.mp-meal { display: flex; justify-content: space-between; gap: 10px; padding: 5px 2px; border-bottom: 1px solid #1a0f15; font-size: 0.8rem; }
+.mp-meal .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-meal .ar { color: var(--dimtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+
+/* ---- calendar ---- */
+.lc-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 12px; }
+.lc-nav .q-btn { padding: 6px 14px; }
+.lc-title { font-weight: 800; color: var(--hotpink); text-shadow: var(--glowtext); min-width: 150px; text-align: center; font-size: 1.05rem; }
+.lc-week, .lc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 460px; margin: 0 auto; }
+.lc-week span { text-align: center; font-size: 0.65rem; color: var(--dimtext); padding-bottom: 4px; }
+.lc-cell {
+  aspect-ratio: 1; border-radius: 6px; border: 1px solid #2a1520; background: #120a0e; color: var(--dimtext);
+  font: inherit; font-size: 0.72rem; cursor: pointer; display: flex; align-items: flex-start; justify-content: flex-end; padding: 3px 5px;
+}
+.lc-cell.empty { border: 0; background: none; cursor: default; }
+.lc-cell.sel { outline: 2px solid #fff; outline-offset: 1px; }
+.lc-mini { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #120a0e; }
+.lc-l1 { background: #3a0f24; }
+.lc-l2 { background: #6b0f3e; }
+.lc-l3 { background: #a3105a; }
+.lc-l4 { background: #e0127a; }
+.lc-l5 { background: var(--hotpink); box-shadow: 0 0 8px var(--pink); }
+.lc-cell.lc-l3, .lc-cell.lc-l4, .lc-cell.lc-l5 { color: #fff; }
+.lc-cell.lc-l5 { color: #1a0010; font-weight: 800; }
+.lc-legend { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0; font-size: 0.65rem; color: var(--dimtext); }
+.lc-mini.lc-l0 { background: #1a0f15; }
+.lc-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.lc-mon {
+  background: var(--cardblack); border: 1px solid #2a1520; border-radius: 10px; padding: 8px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 6px; color: var(--cream); font: inherit;
+}
+.lc-mon:disabled { opacity: 0.35; cursor: default; }
+.lc-mon:not(:disabled):hover { border-color: var(--pink); }
+.lc-mon .nm { font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: var(--hotpink); }
+.lc-mon .ms { font-size: 0.68rem; color: var(--dimtext); min-height: 1em; }
+.lc-minigrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.lc-minigrid .lc-mini { width: auto; aspect-ratio: 1; height: auto; }
+.lc-daybox { background: var(--cardblack); border: 1px solid var(--darkpink); border-radius: 12px; padding: 12px 14px; margin: 12px auto 20px; max-width: 460px; }
+.lc-daytitle { font-weight: 800; color: var(--cream); }
+.lc-daymin { color: var(--hotpink); font-weight: 800; font-size: 1.4rem; text-shadow: var(--glowtext); margin-bottom: 6px; }
+
+/* ---- save to spotify ---- */
+.sv-tabs { flex-wrap: wrap; }
+.sv-box { max-width: 460px; margin: 10px auto 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sv-box .sv-name { max-width: 100%; width: 100%; flex: none; }
+.sv-vis { margin: 0; }
+.sv-list { max-width: 520px; margin: 0 auto 20px; }
+.sv-done .big { font-size: 1.8rem; font-weight: 800; color: var(--hotpink); text-shadow: var(--glowtext); }
+.sv-done .nm { font-weight: 800; color: var(--cream); }
+.sv-done a.q-btn { text-decoration: none; display: inline-block; }

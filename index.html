@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FF1493">
+<title>xXx SparkleStats xXx</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>★</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-sha256@0.11.0/src/sha256.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* ============================================
+   xXx SparkleStats xXx - scene/emo aesthetic
+   ============================================ */
+
+:root {
+  --pink: #FF1493;
+  --hotpink: #FF69B4;
+  --babypink: #FFB6C1;
+  --darkpink: #C71585;
+  --magenta: #FF00FF;
+  --purple: #8B00FF;
+  --deeppurple: #4B0082;
+  --black: #000;
+  --softblack: #0a0a0a;
+  --cardblack: #111;
+  --cream: #FFF0F5;
+  --dimtext: #996b7d;
+  --glow: 0 0 8px #FF1493, 0 0 20px #FF149366;
+  --glowtext: 0 0 6px #FF149388;
+  /* gothic face for logos + headings only. swap the first name to try another. */
+  --font-display: 'UnifrakturMaguntia', 'Old English Text MT', serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--black);
+  color: var(--cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* solid black, spiderwebs tucked in the corners. `color` is the web colour -
+   white at low alpha reads as silver on black; raise it for brighter, drop for darker */
+.webs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; color: rgba(255,255,255,0.2); }
+.webs svg { position: absolute; width: 230px; height: 230px; }
+.webs .tl { top: 0; left: 0; }
+.webs .tr { top: 0; right: 0; transform: scaleX(-1); }
+.webs .bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.webs .br { bottom: 0; right: 0; transform: scale(-1, -1); }
+@media (max-width: 700px) { .webs svg { width: 140px; height: 140px; } }
+
+a { color: var(--hotpink); text-decoration: none; }
+a:hover { text-decoration: underline; text-shadow: var(--glowtext); }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--black); }
+::-webkit-scrollbar-thumb { background: var(--darkpink); }
+
+::selection { background: var(--pink); color: var(--black); }
+
+/* ========== TOAST ========== */
+#toast {
+  position: fixed; left: 50%; bottom: 24px;
+  transform: translateX(-50%) translateY(20px);
+  background: #12080f; border: 2px solid var(--pink); color: var(--babypink);
+  padding: 10px 16px; font-size: 0.85rem; z-index: 200;
+  opacity: 0; pointer-events: none; transition: all 0.3s;
+}
+#toast.on { opacity: 1; transform: translateX(-50%); }
+
+/* ========== NAVBAR ========== */
+#navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(0,0,0,0.9);
+  border-bottom: 2px solid var(--darkpink);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+#navbar .logo {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 400;
+  background: linear-gradient(90deg, var(--pink), var(--hotpink), var(--magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+#navbar button {
+  background: none;
+  border: 1px solid var(--darkpink);
+  color: var(--hotpink);
+  font-family: inherit;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+#navbar button:hover { border-color: var(--pink); color: var(--pink); }
+
+/* ========== MAIN CONTAINER ========== */
+#app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+
+/* desktop: two-column dashboard. everything spans the full width unless it's
+   tagged .half, in which case neighbouring .half cards sit side by side.
+   under 800px this whole block is off and it's the original single column. */
+@media (min-width: 801px) {
+  #app {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 22px;
+    align-items: start;
+  }
+  #app > * { grid-column: 1 / -1; }
+  #app > *:not(.receipt) {                  /* the paper receipt keeps its receipt shape */
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  #app > .half { grid-column: auto; }
+  #app > .sep { display: none; }            /* the ★ x ★ dividers are clutter in a grid */
+  #app > .section-title { margin-top: 36px; }
+  #artists-grid .grid-4 { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* ========== LANDING PAGE ========== */
+.landing {
+  text-align: center;
+  padding: 60px 0 40px;
+}
+
+.landing h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3.6rem;
+  background: linear-gradient(90deg, var(--pink), var(--hotpink), var(--magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.landing .sub {
+  color: var(--babypink);
+  font-size: 1.1rem;
+  margin-bottom: 24px;
+}
+
+.landing .deco {
+  font-size: 1.6rem;
+  letter-spacing: 6px;
+  margin-bottom: 32px;
+}
+
+.login-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--pink), var(--darkpink));
+  color: white;
+  border: 2px solid var(--magenta);
+  padding: 14px 40px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.login-btn:hover {
+  box-shadow: var(--glow);
+  transform: scale(1.04);
+}
+
+.landing .note {
+  margin-top: 20px;
+  font-size: 0.8rem;
+  color: var(--dimtext);
+}
+
+/* ========== CARDS & SECTIONS ========== */
+.card {
+  background: var(--cardblack);
+  border: 2px solid #2a1520;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.card:hover { border-color: #3d1a30; }
+
+.card-glow {
+  border-color: var(--darkpink);
+  box-shadow: 0 0 12px rgba(255,20,147,0.15);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-align: center;
+  font-size: 2rem;
+  margin: 48px 0 20px;
+  color: var(--cream);
+  text-shadow: var(--glowtext);
+}
+.section-title::before { content: '★ '; color: var(--pink); }
+.section-title::after { content: ' ★'; color: var(--pink); }
+
+.sep {
+  text-align: center;
+  color: var(--darkpink);
+  margin: 12px 0;
+  font-size: 0.8rem;
+  letter-spacing: 4px;
+}
+
+/* ========== GRID LAYOUTS ========== */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+@media (max-width: 700px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* ========== TIME RANGE TABS ========== */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tabs button {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 6px 18px;
+  border: 2px solid #2a1520;
+  background: transparent;
+  color: var(--babypink);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tabs button.active {
+  border-color: var(--pink);
+  background: linear-gradient(135deg, var(--pink), var(--darkpink));
+  color: white;
+  font-weight: 700;
+}
+
+/* ========== TRACK ROWS ========== */
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #1a1015;
+  transition: background 0.15s;
+}
+.track-row:hover { background: #1a0f15; }
+
+.track-rank {
+  font-weight: 700;
+  font-size: 1.1rem;
+  min-width: 28px;
+  text-align: center;
+}
+.track-rank.top3 { color: var(--pink); text-shadow: var(--glowtext); }
+.track-rank:not(.top3) { color: var(--darkpink); }
+
+.track-art {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border: 1px solid #2a1520;
+}
+
+.track-info { flex: 1; overflow: hidden; }
+.track-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.track-artist {
+  font-size: 0.78rem;
+  color: var(--dimtext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.track-dur {
+  font-size: 0.75rem;
+  color: var(--dimtext);
+  font-family: monospace;
+}
+
+/* ========== ARTIST GRID ========== */
+.artist-card {
+  text-align: center;
+  padding: 10px;
+  border: 2px solid #1a1015;
+  background: var(--cardblack);
+  transition: all 0.2s;
+}
+.artist-card:hover {
+  border-color: var(--darkpink);
+  transform: scale(1.03);
+}
+
+.artist-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid #2a1520;
+  margin-bottom: 6px;
+}
+
+.artist-name {
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.artist-genre-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border: 1px solid #2a1520;
+  color: var(--hotpink);
+  margin: 1px;
+}
+
+/* ========== PERSONALITY BADGE ========== */
+.personality-badge {
+  text-align: center;
+  padding: 36px 24px;
+  border: 3px solid var(--pink);
+  position: relative;
+  overflow: hidden;
+}
+
+.personality-emoji { font-size: 3.5rem; margin-bottom: 8px; }
+
+.personality-name {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 400;
+  background: linear-gradient(90deg, var(--pink), var(--hotpink), var(--magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.personality-tagline {
+  color: var(--babypink);
+  font-style: italic;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.personality-match {
+  color: var(--dimtext);
+  font-size: 0.8rem;
+  margin-top: 8px;
+}
+
+/* ========== GAUGE ========== */
+.gauge-wrap { text-align: center; }
+.gauge-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--pink);
+}
+.gauge-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--hotpink);
+}
+.gauge-sub {
+  font-size: 0.78rem;
+  color: var(--dimtext);
+}
+
+/* ========== GENRE CLOUD ========== */
+.genre-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+}
+
+/* ========== MYSPACE PROFILE ========== */
+.myspace {
+  border: 3px solid var(--pink);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.myspace-header {
+  background: linear-gradient(135deg, #1a0020, #0a0a2a);
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--darkpink);
+}
+
+.myspace-body {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  padding: 14px;
+}
+
+.myspace-avatar {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 3px solid var(--pink);
+}
+
+.myspace-info td {
+  padding: 3px 0;
+  font-size: 0.78rem;
+  vertical-align: top;
+}
+.myspace-info td:first-child {
+  color: var(--pink);
+  font-weight: 700;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.myspace-top8 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 0 14px 14px;
+}
+
+.myspace-friend {
+  text-align: center;
+}
+.myspace-friend img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid var(--darkpink);
+}
+.myspace-friend .name {
+  font-size: 0.55rem;
+  color: var(--dimtext);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========== AIM WINDOW ========== */
+.aim-window {
+  max-width: 380px;
+  border: 2px solid #999;
+  font-family: Tahoma, Geneva, sans-serif;
+}
+.aim-titlebar {
+  background: linear-gradient(180deg, #0054e3, #0044b8);
+  padding: 3px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.aim-titlebar span { color: white; font-size: 0.7rem; font-weight: 700; }
+.aim-body {
+  background: white;
+  color: #333;
+  padding: 12px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.aim-status {
+  background: #e8e8e8;
+  border-top: 1px solid #ccc;
+  padding: 3px 8px;
+  font-size: 0.6rem;
+  color: #666;
+}
+
+/* ========== BINGO ========== */
+.bingo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.bingo-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.5rem;
+  font-weight: 700;
+  padding: 3px;
+  line-height: 1.15;
+  border: 1px solid #2a1520;
+  background: var(--cardblack);
+  color: var(--dimtext);
+}
+.bingo-cell.checked {
+  background: linear-gradient(135deg, var(--pink), var(--darkpink));
+  color: white;
+  border-color: var(--magenta);
+}
+
+/* ========== MIX CD ========== */
+.cd-disc {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: conic-gradient(#333, #555, #333, #444, #333);
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--darkpink);
+  animation: spin 12s linear infinite;
+}
+.cd-hole {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--black);
+  border: 2px solid #555;
+}
+
+/* ========== SHARE CARD ========== */
+.share-card {
+  width: 380px;
+  padding: 24px;
+  border: 3px solid var(--pink);
+  margin: 0 auto;
+}
+
+/* ========== LOADING ========== */
+.loading {
+  text-align: center;
+  padding: 100px 20px;
+}
+.loading .skull {
+  font-size: 3.5rem;
+  animation: spin 2s linear infinite;
+  display: inline-block;
+}
+.loading p {
+  color: var(--hotpink);
+  margin-top: 16px;
+  font-size: 1.1rem;
+}
+
+/* ========== FOOTER ========== */
+#footer {
+  border-top: 2px solid var(--darkpink);
+  background: rgba(0,0,0,0.9);
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.visitor-count {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: var(--dimtext);
+}
+.visitor-count span {
+  color: var(--pink);
+  font-family: monospace;
+  background: var(--cardblack);
+  padding: 1px 6px;
+  border: 1px solid #2a1520;
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes marquee { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 4px var(--pink); }
+  50% { box-shadow: var(--glow); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.fade-up { animation: fadeUp 0.5s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ========== CHART CONTAINER ========== */
+.chart-box {
+  position: relative;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* ========== TWINKLING STARS BG ========== */
+.stars {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.stars span {
+  position: absolute;
+  color: var(--pink);
+  animation: twinkle 2s ease-in-out infinite alternate;
+  font-size: 10px;
+  opacity: 0.4;
+}
+@keyframes twinkle {
+  0% { opacity: 0.15; transform: scale(0.8); }
+  100% { opacity: 0.7; transform: scale(1.2); }
+}
+
+/* ========== GLITTER SHIMMER ON CARDS ========== */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,20,147,0.04), transparent);
+  animation: shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shimmer {
+  0% { left: -100%; }
+  50% { left: 200%; }
+  100% { left: 200%; }
+}
+
+/* ========== NEON PULSE ON SECTION TITLES ========== */
+.section-title {
+  animation: neonPulse 3s ease-in-out infinite alternate;
+}
+@keyframes neonPulse {
+  0% { text-shadow: 0 0 4px #FF149344; }
+  100% { text-shadow: 0 0 12px #FF1493, 0 0 24px #FF149366, 0 0 40px #FF149333; }
+}
+
+/* ========== RECEIPT ========== */
+.receipt {
+  font-family: 'Courier New', monospace;
+  background: #fefef5;
+  color: #222;
+  padding: 24px 20px;
+  max-width: 360px;
+  margin: 0 auto;
+  border: 2px dashed #999;
+  position: relative;
+}
+.receipt::before, .receipt::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, transparent, transparent 4px, #fefef5 4px, #fefef5 8px);
+}
+.receipt::before { top: -12px; }
+.receipt::after { bottom: -12px; }
+.receipt h3 {
+  text-align: center;
+  font-size: 1rem;
+  border-bottom: 1px dashed #999;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+.receipt-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  padding: 2px 0;
+}
+.receipt-line.total {
+  border-top: 1px dashed #999;
+  margin-top: 6px;
+  padding-top: 6px;
+  font-weight: 700;
+}
+.receipt-divider {
+  text-align: center;
+  color: #999;
+  font-size: 0.65rem;
+  margin: 6px 0;
+  letter-spacing: 2px;
+}
+.receipt-footer {
+  text-align: center;
+  font-size: 0.6rem;
+  color: #999;
+  margin-top: 8px;
+}
+
+/* ========== LISTENING CLOCK ========== */
+.clock-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+}
+.clock-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  border: 1px solid #1a1015;
+  transition: all 0.2s;
+}
+.clock-label {
+  font-size: 0.55rem;
+  color: var(--dimtext);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ========== LOYALTY BADGES ========== */
+.loyalty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a0a15;
+  border: 1px solid #2a1520;
+  padding: 4px 10px;
+  margin: 3px;
+  font-size: 0.75rem;
+}
+.loyalty-badge img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--darkpink);
+}
+.loyalty-badge .ride-or-die {
+  color: var(--pink);
+  font-weight: 700;
+}
+.loyalty-badge .seasonal {
+  color: var(--hotpink);
+}
+
+/* ========== FLAGS ========== */
+.flag-card {
+  padding: 12px;
+  border: 2px solid;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.flag-card.red { border-color: #ff3333; background: rgba(255,0,0,0.05); }
+.flag-card.green { border-color: #33ff33; background: rgba(0,255,0,0.05); }
+.flag-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+
+/* ========== ALBUM WALL ========== */
+.album-wall {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  border: 3px solid var(--darkpink);
+  padding: 3px;
+  background: #0a0a0a;
+}
+.album-wall img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.album-wall img:hover {
+  transform: scale(1.08);
+  z-index: 2;
+  position: relative;
+  box-shadow: 0 0 12px var(--pink);
+}
+
+/* ========== TASTE SENTENCE ========== */
+.taste-sentence {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.6;
+  padding: 20px;
+  background: linear-gradient(135deg, #0a0015, #150a20);
+  border: 2px solid var(--darkpink);
+}
+.taste-sentence .hl {
+  color: var(--pink);
+  text-shadow: var(--glowtext);
+}
+
+/* ========== ANIMATED BORDERS ========== */
+.card-animated-border {
+  position: relative;
+  overflow: hidden;
+}
+.card-animated-border::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: conic-gradient(from 0deg, var(--pink), var(--magenta), var(--purple), var(--darkpink), var(--pink));
+  z-index: -1;
+  animation: borderSpin 4s linear infinite;
+}
+@keyframes borderSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========== ALTERNATING CAPS ========== */
+.alt-caps { letter-spacing: 2px; }
+
+/* ========== REPEAT OFFENDERS ========== */
+.repeat-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #1a1015;
+}
+.repeat-track img {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #2a1520;
+}
+.repeat-count {
+  background: var(--pink);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 22px;
+  text-align: center;
+}
+
+/* ========== ANIMATED HEARTS ========== */
+.floating-hearts {
+  position: relative;
+  overflow: hidden;
+  height: 30px;
+}
+.floating-hearts span {
+  position: absolute;
+  animation: floatUp 3s ease-out infinite;
+  opacity: 0;
+  font-size: 14px;
+}
+@keyframes floatUp {
+  0% { transform: translateY(30px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+/* ========== ENHANCED PERSONALITY ========== */
+.personality-badge {
+  animation: glow 3s ease-in-out infinite;
+}
+
+/* ========== SHARE BUTTON ========== */
+.share-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--pink), var(--darkpink));
+  border: 2px solid var(--magenta);
+  color: white;
+  padding: 10px 24px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.share-btn:hover {
+  box-shadow: var(--glow);
+  transform: scale(1.05);
+}
+
+/* ========== ENHANCED HOVER EFFECTS ========== */
+.track-row:hover .track-name { color: var(--pink); }
+.artist-card:hover .artist-name { color: var(--pink); text-shadow: var(--glowtext); }
+
+/* ========== ERA COMPARISON ========== */
+.era-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1015;
+}
+.era-label {
+  min-width: 80px;
+  font-size: 0.72rem;
+  color: var(--dimtext);
+}
+.era-bar {
+  flex: 1;
+  height: 18px;
+  background: #1a0a15;
+  overflow: hidden;
+  position: relative;
+}
+.era-bar-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .album-wall { grid-template-columns: repeat(5, 1fr); }
+  .clock-grid { grid-template-columns: repeat(6, 1fr); }
+}
+</style>
+<link rel="stylesheet" href="quiz.css">
+<link rel="stylesheet" href="extras.css">
+<link rel="stylesheet" href="wave3.css">
+<link rel="stylesheet" href="eight.css">
+<link rel="stylesheet" href="pitch.css">
+<link rel="stylesheet" href="arcade4.css">
+<link rel="stylesheet" href="arcade5.css">
+<link rel="stylesheet" href="bingo.css">
+<link rel="stylesheet" href="keeps.css">
+<link rel="stylesheet" href="pet.css">
+</head>
+<body>
+
+<!-- TWINKLING STARS -->
+<div class="stars" id="stars-bg"></div>
+
+<!-- CORNER SPIDERWEBS -->
+<div class="webs" aria-hidden="true">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="web" viewBox="0 0 200 200" overflow="visible"><g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><g><line x1="0" y1="0" x2="205.0" y2="0.0"/><line x1="0" y1="0" x2="198.0" y2="53.1"/><line x1="0" y1="0" x2="177.5" y2="102.5"/><line x1="0" y1="0" x2="145.0" y2="145.0"/><line x1="0" y1="0" x2="102.5" y2="177.5"/><line x1="0" y1="0" x2="53.1" y2="198.0"/><line x1="0" y1="0" x2="0.0" y2="205.0"/></g><g stroke-opacity="0.8"><path d="M42.0 0.0 Q37.5 4.9 40.6 10.9 Q34.9 14.5 36.4 21.0 Q30.0 23.0 29.7 29.7 Q23.0 30.0 21.0 36.4 Q14.5 34.9 10.9 40.6 Q4.9 37.5 0.0 42.0"/><path d="M84.0 0.0 Q75.0 9.9 81.1 21.7 Q69.8 28.9 72.7 42.0 Q60.0 46.0 59.4 59.4 Q46.0 60.0 42.0 72.7 Q28.9 69.8 21.7 81.1 Q9.9 75.0 0.0 84.0"/><path d="M126.0 0.0 Q112.4 14.8 121.7 32.6 Q104.8 43.4 109.1 63.0 Q90.0 69.0 89.1 89.1 Q69.0 90.0 63.0 109.1 Q43.4 104.8 32.6 121.7 Q14.8 112.4 0.0 126.0"/><path d="M168.0 0.0 Q149.9 19.7 162.3 43.5 Q139.7 57.9 145.5 84.0 Q120.0 92.0 118.8 118.8 Q92.0 120.0 84.0 145.5 Q57.9 139.7 43.5 162.3 Q19.7 149.9 0.0 168.0"/></g></g></symbol></svg>
+  <svg class="tl"><use href="#web"/></svg>
+  <svg class="tr"><use href="#web"/></svg>
+  <svg class="bl"><use href="#web"/></svg>
+  <svg class="br"><use href="#web"/></svg>
+</div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="logo">★ xXx SparkleStats xXx ★</div>
+  <div id="nav-right"></div>
+</nav>
+
+<!-- APP -->
+<div id="app"></div>
+
+<!-- GUESS THE SONG -->
+<div id="game" style="display:none;"></div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <div class="visitor-count">
+    visitor # <span id="visitor-num"></span>
+  </div>
+</div>
+
+<!-- sparkle cursor canvas -->
+<canvas id="sparkle-canvas" style="position:fixed;inset:0;z-index:99999;pointer-events:none;"></canvas>
+
+<!-- DATA + APP SCRIPTS -->
+<script src="genre-data.js"></script>
+<script src="genres.js"></script>
+<script src="app.js"></script>
+<script src="quiz.js"></script>
+<script src="games.js"></script>
+<script src="labs.js"></script>
+<script src="versus.js"></script>
+<script src="online.js"></script>
+<script src="more.js"></script>
+<script src="wave3.js"></script>
+<script src="you.js"></script>
+<script src="party.js"></script>
+<script src="history.js"></script>
+<script src="stats.js"></script>
+<script src="eight.js"></script>
+<script src="pitch.js"></script>
+<script src="arcade4.js"></script>
+<script src="arcade5.js"></script>
+<script src="bingo.js"></script>
+<script src="keeps.js"></script>
+<script src="pet.js"></script>
+
+</body>
+</html>
