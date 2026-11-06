@@ -1,0 +1,131 @@
+/* ============ casino.js: scratch-offs / roulette / chart race / the drop / blackjack (+ casino night in casino-party.js) ============ */
+
+.cz-top #cz-coins { color: #FFD700; font-size: 1.1rem; }
+.cz-mini { padding: 3px 10px; font-size: 0.75rem; }
+.cz-bets { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.cz-chip {
+  width: 54px; height: 54px; border-radius: 50%; border: 3px dashed #5a2a40; background: #1a0e14;
+  color: var(--cream); font-weight: bold; font-family: inherit; font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
+}
+.cz-chip.on { border-color: #FFD700; color: #FFD700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); transform: scale(1.08); }
+.cz-chip:disabled { opacity: 0.45; cursor: default; }
+.cz-face { display: inline-flex; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; border: 1px solid var(--pink); background: #0b0508; align-items: center; justify-content: center; flex-shrink: 0; }
+.cz-face img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- scratch-offs ---- */
+.sc-wrap {
+  position: relative; width: min(330px, 88vw); aspect-ratio: 1; margin: 6px auto 0; border-radius: 14px; overflow: hidden;
+  border: 3px solid var(--pink); box-shadow: var(--glow); background: #12080f;
+}
+.sc-blank { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--hotpink); font-weight: bold; letter-spacing: 2px; text-shadow: var(--glowtext); }
+.sc-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px; padding: 6px; }
+.sc-cell { border-radius: 8px; background: #0b0508; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+.sc-cell .sm-cell { height: auto; }
+.sc-cell .sm-cell img { width: min(54px, 13vw); height: min(54px, 13vw); }
+.sc-cell.hit { background: #3a0f24; box-shadow: inset 0 0 0 2px #FFD700, 0 0 12px rgba(255, 215, 0, 0.6); }
+.sc-foil { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; transition: opacity 0.5s; }
+.sc-foil.gone { opacity: 0; pointer-events: none; }
+
+/* ---- roulette ---- */
+.rl-stage { --wsz: min(300px, 78vw); position: relative; width: var(--wsz); height: var(--wsz); margin: 18px auto 0; }
+.rl-ptr {
+  position: absolute; left: 50%; top: -14px; transform: translateX(-50%); z-index: 2; width: 0; height: 0;
+  border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 24px solid #FFD700; filter: drop-shadow(0 0 6px #FFD700);
+}
+.rl-wheel { position: absolute; inset: 0; border-radius: 50%; border: 5px solid var(--pink); box-shadow: var(--glow); will-change: transform; }
+.rl-lab { position: absolute; left: 50%; top: 50%; }
+.rl-lab .cz-face { width: calc(var(--wsz) * 0.12); height: calc(var(--wsz) * 0.12); border-color: #fff; }
+.rl-hub { position: absolute; left: 50%; top: 50%; width: 18%; height: 18%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #FFD700, #8a6d00); border: 3px solid #140a10; }
+.rl-picks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.rl-pick {
+  display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 5px; border-radius: 22px; border: 1px solid #3a1f2c;
+  background: #12080f; color: var(--cream); font-family: inherit; font-size: 0.8rem; cursor: pointer; max-width: 180px;
+}
+.rl-pick span:not(.cz-face) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-pick b { color: #FFD700; margin-left: auto; }
+.rl-pick.pink, .rl-pick.black { padding: 8px 14px; }
+.rl-pick.pink { background: #d6136f; border-color: #d6136f; }
+.rl-pick.black { background: #000; border-color: #555; }
+.rl-pick.on { border-color: #FFD700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+
+/* ---- chart race ---- */
+.hr-track { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.hr-lane {
+  display: block; width: 100%; text-align: left; padding: 6px 8px; border-radius: 10px; border: 1px solid #3a1f2c;
+  background: #12080f; color: var(--cream); font-family: inherit; cursor: pointer;
+}
+.hr-lane.on { border-color: #FFD700; box-shadow: 0 0 8px rgba(255, 215, 0, 0.45); }
+.hr-lane.lead { background: #1d0b15; }
+.hr-lane.win { background: #3a0f24; border-color: var(--pink); box-shadow: var(--glow); }
+.hr-top { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; }
+.hr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hr-odds { color: #FFD700; font-weight: bold; }
+.hr-run {
+  display: block; position: relative; height: 40px; border-radius: 20px;
+  background: repeating-linear-gradient(90deg, #0b0508 0 18px, #150a10 18px 36px);
+  border-right: 4px solid #fff;
+}
+.hr-dot { position: absolute; left: 0; top: 0; }
+.hr-dot .cz-face { width: 40px; height: 40px; }
+.hr-lane.lead .hr-dot .cz-face { box-shadow: 0 0 10px var(--pink); }
+
+/* ---- the drop ---- */
+.dr-stage { position: relative; margin: 8px auto 0; max-width: 600px; border-radius: 14px; border: 1px solid #3a1f2c; background: #0b0508; overflow: hidden; }
+.dr-cv { display: block; width: 100%; height: auto; aspect-ratio: 600 / 240; }
+.dr-mult {
+  position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-family: monospace; font-weight: bold;
+  font-size: clamp(2.2rem, 10vw, 3.6rem); color: var(--cream); text-shadow: var(--glowtext); pointer-events: none;
+}
+.dr-mult.hot { color: var(--hotpink); }
+.dr-mult.gold { color: #FFD700; text-shadow: 0 0 14px #FFD700; }
+.dr-mult.dropped { color: #888; text-shadow: none; animation: drShake 0.4s; }
+@keyframes drShake { 0%, 100% { transform: translate(-50%, -50%); } 25% { transform: translate(-54%, -48%); } 75% { transform: translate(-46%, -52%); } }
+.dr-song { position: absolute; left: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--dimtext); max-width: 90%; }
+.dr-song img { width: 30px; height: 30px; border-radius: 4px; }
+.dr-song span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dr-go.cash { background: linear-gradient(90deg, #b8860b, #FFD700); color: #140a10; }
+.dr-would { display: block; font-size: 0.8rem; color: var(--dimtext); font-weight: normal; margin-top: 4px; }
+
+/* ---- blackjack ---- */
+.bj-table {
+  margin: 8px auto 0; max-width: 620px; padding: 12px; border-radius: 18px; border: 3px solid #3a1f2c;
+  background: radial-gradient(ellipse at center, #2a0d1c, #0b0508 80%);
+}
+.bj-side + .bj-side { margin-top: 14px; }
+.bj-lbl { text-align: center; color: var(--dimtext); font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; }
+.bj-lbl b { color: var(--cream); font-size: 1rem; letter-spacing: 0; margin-left: 4px; }
+.bj-hand { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; min-height: 128px; margin-top: 6px; }
+.bj-card {
+  position: relative; width: 86px; height: 124px; border-radius: 8px; overflow: hidden; background: #140a10;
+  border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+}
+.bj-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bj-n {
+  position: absolute; left: 4px; top: 3px; min-width: 26px; padding: 0 4px; border-radius: 6px; text-align: center;
+  background: rgba(255, 255, 255, 0.92); color: #d6136f; font-weight: bold; font-size: 1.1rem;
+}
+.bj-t {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 4px 3px; font-size: 0.6rem; line-height: 1.2; color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85)); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.bj-tn { display: block; color: var(--hotpink); }
+.bj-card.back {
+  background: repeating-linear-gradient(45deg, #d6136f 0 8px, #140a10 8px 16px); display: flex; align-items: center; justify-content: center;
+}
+.bj-card.back span { background: #140a10; color: var(--hotpink); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+
+/* ---- casino night (party) ---- */
+.cn-who { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0; }
+.cn-p { padding: 4px 10px; border-radius: 14px; background: #12080f; border: 1px solid #3a1f2c; font-size: 0.8rem; color: var(--cream); }
+.cn-p b { color: #FFD700; margin-left: 4px; }
+.cn-p.in { border-color: var(--pink); }
+.cn-p.up { border-color: #FFD700; }
+.cn-code { text-align: center; font-size: 2rem; font-weight: bold; letter-spacing: 6px; color: var(--hotpink); text-shadow: var(--glowtext); margin: 6px 0; }
+.cn-games { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 12px 0; }
+.cn-board { max-width: 420px; margin: 10px auto; }
+.cn-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #2a1520; color: var(--cream); }
+.cn-row b { color: #FFD700; }
+.cn-row .d { font-size: 0.8rem; }
+.cn-row .d.plus { color: var(--hotpink); }
+.cn-row .d.minus { color: var(--dimtext); }
+.cn-status { text-align: center; color: var(--dimtext); font-size: 0.85rem; min-height: 1.2em; margin: 6px 0; }

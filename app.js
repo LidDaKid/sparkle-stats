@@ -938,7 +938,7 @@ function renderLanding() {
       <p style="margin-top:18px;">
         <button class="login-btn" style="background:transparent;color:var(--hotpink);border-color:var(--darkpink);font-size:0.85rem;padding:10px 22px;" onclick="if(typeof pOpenJoin==='function')pOpenJoin()">got a room code? join a game</button>
       </p>
-      <p class="note" style="margin-top:6px;">party mode, album pictionary and online versus work without logging in</p>
+      <p class="note" style="margin-top:6px;">party mode, casino night, album pictionary and online versus work without logging in</p>
       <details class="card" style="max-width:460px;margin:18px auto 0;text-align:left;font-size:0.8rem;color:var(--babypink);">
         <summary style="cursor:pointer;color:var(--hotpink);">can't log in? read this</summary>
         <p style="margin-top:8px;line-height:1.7;">

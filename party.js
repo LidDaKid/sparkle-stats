@@ -257,6 +257,7 @@ function pHostPlayerLeft(pl) {
   if (P.role !== 'host') return;
   pRemember(pl, P.kind === 'dj' ? (P.dj ? P.dj.index : 0) : P.index);
   if (P.kind === 'bingop') { if (typeof bnHostLeft === 'function') bnHostLeft(pl); return; }
+  if (P.kind === 'casinop') { if (typeof cnHostLeft === 'function') cnHostLeft(pl); return; }
   if (P.kind === 'dj') {
     pSend(pDjLobbyMsg());
     if (Q.screen === 'djlobby') pLobbyPlayers();
@@ -419,7 +420,7 @@ function pScreenJoin() {
   P.role = 'guest';
   qSet(
     qTopBar('&larr; back', pBack()) +
-    qHeader('🔑 join a game', 'party mode, DJ mode, bingo, album pictionary, or an online versus') +
+    qHeader('🔑 join a game', 'party mode, DJ mode, bingo, casino night, album pictionary, or an online versus') +
     '<div class="o-room">' +
       '<div class="q-note" style="margin-bottom:6px;">your name</div>' +
       '<input id="p-name-input" class="q-input" maxlength="16" placeholder="who are you" value="' + esc(pSavedName()) + '" style="max-width:260px;margin:0 auto 12px;display:block;">' +
@@ -551,7 +552,7 @@ function pRejoinTry() {
   const later = () => { if (settled) return; settled = true; try { peer.destroy(); } catch {} P.rejoinTimer = setTimeout(pRejoinTry, 5000); };
   peer.on('error', later);
   peer.on('open', () => {
-    const prefix = rj.kind === 'party' ? P_PARTY : rj.kind === 'dj' ? P_DJ : rj.kind === 'draw' ? P_DRAW : rj.kind === 'bingop' ? P_BINGO : O_PREFIX;
+    const prefix = rj.kind === 'party' ? P_PARTY : rj.kind === 'dj' ? P_DJ : rj.kind === 'draw' ? P_DRAW : rj.kind === 'bingop' ? P_BINGO : rj.kind === 'casinop' ? 'sparkle-casino-' : O_PREFIX;
     const conn = peer.connect(prefix + rj.code.toLowerCase(), { reliable: true });
     const to = setTimeout(later, 8000);
     conn.on('open', () => {
@@ -603,6 +604,7 @@ function pGuestData(msg) {
   if (P.kind === 'draw') { pDrawGuestData(msg); return; }
   if (P.kind === 'dj') { pDjGuestData(msg); return; }
   if (P.kind === 'bingop') { if (typeof bnGuestData === 'function') bnGuestData(msg); return; }
+  if (P.kind === 'casinop') { if (typeof cnGuestData === 'function') cnGuestData(msg); return; }
   switch (msg.type) {
     case 'lobby':
       P.lobby = msg;
@@ -1008,7 +1010,7 @@ const P_DJ = 'sparkle-dj-';
 const P_DJ_SECS = { mc: 20, type: 30 };
 LABS.dj = { emoji: '🎧', name: 'DJ mode', sub: 'up to 8 people anywhere. you pick every song, they guess on their phones' };
 
-function pKindTitle() { return P.kind === 'dj' ? '🎧 DJ mode' : P.kind === 'draw' ? '✏️ album pictionary' : P.kind === 'bingop' ? '🎱 bingo party' : '🎉 party mode'; }
+function pKindTitle() { return P.kind === 'dj' ? '🎧 DJ mode' : P.kind === 'draw' ? '✏️ album pictionary' : P.kind === 'bingop' ? '🎱 bingo party' : P.kind === 'casinop' ? '🎲 casino night' : '🎉 party mode'; }
 
 function pOpenDj() {
   if (!pHasPeer()) { qSet(qTopBar('&larr; arcade', 'gScreenHub()') + qHeader('🎧 DJ mode', '') + qErrorBox('the online part didn\'t load (peerjs). refresh and try again?')); return; }
@@ -1377,7 +1379,7 @@ X_HUB.social.push(() => xCard('🎧', 'DJ mode', LABS.dj.sub, 'pOpenDj()'));
 // ======================== DROPS ========================
 
 function pDropped() {
-  if (!['party', 'draw', 'dj', 'bingop'].includes(Q.game)) return;
+  if (!['party', 'draw', 'dj', 'bingop', 'casinop'].includes(Q.game)) return;
   if (P.role === 'host') return;                       // hosts handle leavers per player (see pHostPlayerLeft / pDrawPartnerGone)
   if (P.rejoin && !P.reconnecting) { pGuestLost(); return; }   // guests try to get back in first
   if (P.reconnecting) return;
@@ -1405,11 +1407,11 @@ function pScreenDropped(why) {
     return prev.qScreenMode();
   };
   gScreenHub = function () {
-    if (Q.game === 'party' || Q.game === 'draw' || Q.game === 'dj' || Q.game === 'bingop') { pReset(); Q.game = 'classic'; }
+    if (Q.game === 'party' || Q.game === 'draw' || Q.game === 'dj' || Q.game === 'bingop' || Q.game === 'casinop') { pReset(); Q.game = 'classic'; }
     return prev.gScreenHub();
   };
   closeQuiz = function () {
-    if (Q.game === 'party' || Q.game === 'draw' || Q.game === 'dj' || Q.game === 'bingop' || Q.screen === 'pjoin') { pReset(); Q.game = 'classic'; }
+    if (Q.game === 'party' || Q.game === 'draw' || Q.game === 'dj' || Q.game === 'bingop' || Q.game === 'casinop' || Q.screen === 'pjoin') { pReset(); Q.game = 'classic'; }
     return prev.closeQuiz();
   };
   oMyName = () => P.myName || prev.oMyName();
@@ -1421,7 +1423,7 @@ function pScreenDropped(why) {
   window.oDropped = oDropped;
   oHubCards = () =>
     '<button class="q-src" onclick="pScreenJoin()"><span class="ico">🔑</span><span class="lbl">join with a room code</span>' +
-    '<span class="sub">party mode, DJ mode, bingo, album pictionary, or an online versus - got a code? in here</span></button>';
+    '<span class="sub">party mode, DJ mode, bingo, casino night, album pictionary, or an online versus - got a code? in here</span></button>';
 })();
 
 X_HUB.social.push(

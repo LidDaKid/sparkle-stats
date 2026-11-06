@@ -721,7 +721,11 @@ function xRenderQuestion() {
     return r;
   };
   qPlayClip = function (url) {
-    if (!url || !xFxActive() || /^blob:/.test(url)) return prev.qPlayClip(url);
+    // only the remix games' own question clips get remixed. Q.game sticks around after you leave a
+    // quiz, so without this the slot machine / bingo / party clips came out nightcore'd too
+    const cur = Q.questions && Q.questions[Q.index];
+    const isQuizClip = (Q.screen === 'play' || Q.screen === 'mplay') && cur && cur.preview === url;
+    if (!url || !xFxActive() || !isQuizClip || /^blob:/.test(url)) return prev.qPlayClip(url);
     const token = ++X.fxToken;
     xFxGet(url, X.fx).then(
       b => { if (token === X.fxToken) prev.qPlayClip(b || url); },
