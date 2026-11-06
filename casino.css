@@ -129,3 +129,4 @@
 .cn-row .d.plus { color: var(--hotpink); }
 .cn-row .d.minus { color: var(--dimtext); }
 .cn-status { text-align: center; color: var(--dimtext); font-size: 0.85rem; min-height: 1.2em; margin: 6px 0; }
+.rl-lab.sm .cz-face { width: calc(var(--wsz) * 0.08); height: calc(var(--wsz) * 0.08); }

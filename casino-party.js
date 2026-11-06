@@ -51,7 +51,7 @@ function cnPickLabel(game, opts, pick) {
 }
 // bet payout (stake included) for a finished roulette / race round
 function cnPayFor(game, opts, bet, r) {
-  if (game === 'rl') { const seg = opts.segs[r.j]; return rlHit(bet.pick, seg) ? bet.amt * rlMult(bet.pick) : 0; }
+  if (game === 'rl') { const seg = opts.segs[r.j]; return rlHit(bet.pick, seg) ? rlPay(bet.amt, bet.pick, opts.segs) : 0; }
   if (game === 'hr') return bet.pick === 'r' + r.win ? Math.floor(bet.amt * opts.racers[r.win].mult) : 0;
   return 0;
 }
@@ -60,7 +60,7 @@ function cnPayFor(game, opts, bet, r) {
 function cnBetUI() {
   const g = C.game, o = C.opts;
   let picker = '';
-  if (g === 'rl') picker = rlPickBtns(o.syms, C.pick, 'cnPick');
+  if (g === 'rl') picker = rlPickBtns(o.syms, C.pick, 'cnPick', o.segs || rlSegs(o.syms.length));
   else if (g === 'hr' && P.role !== 'host') picker = hrLanes(o.racers, C.pick ? +C.pick.slice(1) : -1, 'cnPickR');
   return '<div id="cn-betui">' + picker + czBets() +
     '<div class="q-actions"><button class="q-btn" id="cn-place" onclick="cnPlaceMine()">place bet</button></div></div>' +
@@ -272,8 +272,8 @@ function cnGo() {
   const go = czEl('cn-go'); if (go) go.style.display = 'none';
   const round = C.round;
   if (C.game === 'rl') {
-    const S = C.opts.segs.length, j = Math.floor(Math.random() * S);
-    C.rot = rlRotFor(C.rot, j, S, (Math.random() - 0.5) * (360 / S) * 0.7);
+    const spin = rlSpinTo(C.rot, C.opts.segs), j = spin.j;
+    C.rot = spin.rot;
     const w = czEl('rl-wheel');
     if (w) { w.style.transition = 'transform 4.6s cubic-bezier(.12,.62,.16,1)'; w.style.transform = 'rotate(' + C.rot + 'deg)'; }
     pSend({ type: 'go', game: 'rl' });

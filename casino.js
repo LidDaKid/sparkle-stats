@@ -225,38 +225,61 @@ function scReveal() {
 
 // ======================== ROULETTE ========================
 
-const RL_PAY = { artist: 5, color: 2 };
+// pink takes 75% of the wheel, black 25%. payouts follow the odds (5% house cut)
+const RL_W = { pink: 3, black: 1 };
 
-function rlSegs(k) { return Array.from({ length: 2 * k }, (_, j) => ({ who: j % k, color: j % 2 ? 'black' : 'pink' })); }
+function rlSegs(k) {
+  const segs = Array.from({ length: 2 * k }, (_, j) => ({ who: j % k, color: j % 2 ? 'black' : 'pink' }));
+  const tot = segs.reduce((t, x) => t + RL_W[x.color], 0);
+  let a = 0;
+  segs.forEach(x => { x.p = RL_W[x.color] / tot; x.from = a; a += x.p * 360; x.to = a; });
+  return segs;
+}
 function rlHit(pick, seg) { return pick === 'a' + seg.who || pick === seg.color; }
-function rlMult(pick) { return pick && pick[0] === 'a' ? RL_PAY.artist : RL_PAY.color; }
-// rotation that puts segment j (plus jitter in degrees) under the top pointer, always spinning forward
-function rlRotFor(cur, j, S, jitter, turns) {
-  const a = 360 / S;
-  const target = -(j * a + a / 2 + (jitter || 0));
+function rlChance(segs, pick) { return segs.reduce((t, x) => t + (rlHit(pick, x) ? x.p : 0), 0); }
+function rlMult(pick, segs) {
+  const p = rlChance(segs, pick);
+  return p > 0 ? Math.max(1.1, Math.floor(0.95 / p * 10) / 10) : 0;
+}
+function rlPay(stake, pick, segs) { return Math.floor(stake * rlMult(pick, segs)); }
+// a slice, picked by size
+function rlPickSeg(segs, rnd) {
+  let r = (rnd || Math.random)();
+  for (let j = 0; j < segs.length; j++) { r -= segs[j].p; if (r < 0) return j; }
+  return segs.length - 1;
+}
+// rotation that puts slice j under the top pointer (frac = where inside the slice), always spinning forward
+function rlRotFor(cur, j, segs, frac, turns) {
+  const x = segs[j];
+  const target = -(x.from + (x.to - x.from) * (frac == null ? 0.5 : frac));
   const delta = (((target - cur) % 360) + 360) % 360;
   return cur + 360 * (turns == null ? 5 : turns) + delta;
 }
-function rlSegAt(rot, S) {
-  const a = 360 / S;
+function rlSegAt(rot, segs) {
   const phi = (((-rot) % 360) + 360) % 360;
-  return Math.floor(phi / a) % S;
+  const j = segs.findIndex(x => phi >= x.from && phi < x.to);
+  return j < 0 ? segs.length - 1 : j;
+}
+function rlSpinTo(cur, segs) {
+  const j = rlPickSeg(segs);
+  return { j, rot: rlRotFor(cur, j, segs, 0.15 + Math.random() * 0.7) };
 }
 
 function rlWheel(syms, segs, rot, id) {
-  const S = segs.length, a = 360 / S;
-  const grad = 'conic-gradient(' + segs.map((s, j) => (s.color === 'pink' ? '#d6136f' : '#140a10') + ' ' + (j * a) + 'deg ' + ((j + 1) * a) + 'deg').join(',') + ')';
+  const grad = 'conic-gradient(' + segs.map(x => (x.color === 'pink' ? '#d6136f' : '#140a10') + ' ' + x.from + 'deg ' + x.to + 'deg').join(',') + ')';
   return '<div class="rl-stage"><div class="rl-ptr"></div>' +
     '<div class="rl-wheel" id="' + (id || 'rl-wheel') + '" style="background:' + grad + ';transform:rotate(' + rot + 'deg)">' +
-      segs.map((s, j) => '<div class="rl-lab" style="transform:translate(-50%,-50%) rotate(' + (j * a + a / 2) + 'deg) translateY(calc(var(--wsz) * -0.35))">' + czFace(syms[s.who]) + '</div>').join('') +
+      segs.map(x => '<div class="rl-lab' + (x.color === 'black' ? ' sm' : '') + '" style="transform:translate(-50%,-50%) rotate(' + ((x.from + x.to) / 2) + 'deg) translateY(calc(var(--wsz) * -0.36))">' + czFace(syms[x.who]) + '</div>').join('') +
       '<div class="rl-hub"></div>' +
     '</div></div>';
 }
-function rlPickBtns(syms, pick, fn) {
+function rlPickBtns(syms, pick, fn, segs) {
+  segs = segs || rlSegs(syms.length);
+  const pct = p => Math.round(rlChance(segs, p) * 100) + '%';
   return '<div class="rl-picks" id="rl-picks">' +
-    syms.map((s, i) => '<button class="rl-pick' + (pick === 'a' + i ? ' on' : '') + '" data-p="a' + i + '" onclick="' + fn + '(\'a' + i + '\')">' + czFace(s) + '<span>' + esc(s.name) + '</span><b>×' + RL_PAY.artist + '</b></button>').join('') +
-    '<button class="rl-pick pink' + (pick === 'pink' ? ' on' : '') + '" data-p="pink" onclick="' + fn + '(\'pink\')"><span>pink</span><b>×' + RL_PAY.color + '</b></button>' +
-    '<button class="rl-pick black' + (pick === 'black' ? ' on' : '') + '" data-p="black" onclick="' + fn + '(\'black\')"><span>black</span><b>×' + RL_PAY.color + '</b></button>' +
+    syms.map((s, i) => '<button class="rl-pick' + (pick === 'a' + i ? ' on' : '') + '" data-p="a' + i + '" onclick="' + fn + '(\'a' + i + '\')">' + czFace(s) + '<span>' + esc(s.name) + '</span><b>×' + rlMult('a' + i, segs) + '</b></button>').join('') +
+    '<button class="rl-pick pink' + (pick === 'pink' ? ' on' : '') + '" data-p="pink" onclick="' + fn + '(\'pink\')"><span>pink ' + pct('pink') + '</span><b>×' + rlMult('pink', segs) + '</b></button>' +
+    '<button class="rl-pick black' + (pick === 'black' ? ' on' : '') + '" data-p="black" onclick="' + fn + '(\'black\')"><span>black ' + pct('black') + '</span><b>×' + rlMult('black', segs) + '</b></button>' +
   '</div>';
 }
 function rlMarkPick(pick) {
@@ -279,7 +302,7 @@ function rlScreen() {
     czHead('roulette') +
     rlWheel(syms, segs, rot) +
     '<div class="sm-out" id="cz-out"></div>' +
-    rlPickBtns(syms, CZ.rl.pick, 'rlPick') +
+    rlPickBtns(syms, CZ.rl.pick, 'rlPick', segs) +
     czBets() +
     '<div class="q-actions"><button class="q-btn" id="rl-go" onclick="rlSpin()">spin</button></div>'
   );
@@ -296,9 +319,8 @@ function rlSpin() {
   R.spinning = true; R.stake = amt;
   qStopAudio(); czMsg(''); czLock(true);
   const go = czEl('rl-go'); if (go) go.disabled = true;
-  const S = R.segs.length;
-  const j = Math.floor(Math.random() * S);
-  R.rot = rlRotFor(R.rot, j, S, (Math.random() - 0.5) * (360 / S) * 0.7);
+  const spin = rlSpinTo(R.rot, R.segs), j = spin.j;
+  R.rot = spin.rot;
   const w = czEl('rl-wheel');
   if (w) { w.style.transition = 'transform 4.6s cubic-bezier(.12,.62,.16,1)'; w.style.transform = 'rotate(' + R.rot + 'deg)'; }
   setTimeout(() => rlLanded(R, j), 4700);
@@ -311,10 +333,10 @@ function rlLanded(R, j) {
   const go = czEl('rl-go'); if (go) go.disabled = false;
   const seg = R.segs[j], s = R.syms[seg.who];
   if (rlHit(R.pick, seg)) {
-    const mult = rlMult(R.pick), win = R.stake * mult;
+    const mult = rlMult(R.pick, R.segs), win = rlPay(R.stake, R.pick, R.segs);
     czWin(win);
-    czMsg(esc(s.name) + ' &middot; ' + seg.color + ' &middot; +' + win + ' 🪙', mult === RL_PAY.artist ? 'jackpot' : 'three');
-    czBoom(mult === RL_PAY.artist);
+    czMsg(esc(s.name) + ' &middot; ' + seg.color + ' &middot; +' + win + ' 🪙', mult >= 3 ? 'jackpot' : 'three');
+    czBoom(mult >= 3);
   } else {
     czMsg(esc(s.name) + ' &middot; ' + seg.color, 'none');
   }
