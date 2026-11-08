@@ -1,0 +1,92 @@
+/* ============ quiz6.js ============ */
+.q6-sub { text-align: center; color: var(--dimtext); font-size: 0.85rem; margin: 4px 0 8px; }
+.q6-best { margin-top: 6px; color: #FFD700; font-size: 0.85rem; }
+.q6-ask { text-align: center; color: var(--cream); font-size: 1.05rem; margin: 8px 0 12px; }
+.q6-end { text-align: center; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--dimtext); }
+.q6-rec { width: 110px; height: 110px; margin: 6px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem;
+  background: repeating-radial-gradient(circle, #111 0 2px, #1d1d1d 2px 4px); border: 2px solid var(--pink); }
+.q6-rec.spinning { animation: fmSpin 3s linear infinite; }
+.q6-lyric { max-width: 480px; margin: 0 auto 14px; padding: 16px; border-radius: 12px; background: #12080f; border: 1px solid var(--pink);
+  text-align: center; font-size: 1.2rem; font-weight: bold; color: var(--cream); line-height: 1.35; }
+.q-choices.q6-six { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 520px) { .q-choices.q6-six { grid-template-columns: 1fr 1fr; } }
+.q-loading { text-align: center; color: var(--dimtext); margin: 30px 0; }
+
+/* top 10 */
+.t10-list { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 5px; }
+.t10-row { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 8px; border: 1px solid #2a1520; background: #12080f; color: var(--dimtext);
+  font-family: inherit; font-size: 0.75rem; text-align: left; cursor: pointer; }
+.t10-row img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
+.t10-row .tx b { display: block; color: var(--cream); font-size: 0.85rem; }
+.t10-n { min-width: 32px; text-align: center; font-family: monospace; font-weight: bold; color: #FFD700; font-size: 1rem; }
+.t10-row.on { border-color: var(--pink); background: #2a0f1d; }
+.t10-row.ok { border-color: #33ff88; background: rgba(0, 255, 120, 0.08); }
+.t10-row.near { border-color: #FFD700; }
+.t10-row.bad { border-color: #ff3355; background: rgba(255, 0, 60, 0.06); }
+
+/* which came first */
+.wf-pair { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
+.wf-card { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 160px; padding: 10px; border-radius: 12px; border: 2px solid #3a1f2c;
+  background: #12080f; color: var(--dimtext); font-family: inherit; font-size: 0.75rem; cursor: pointer; }
+.wf-card:hover { border-color: var(--pink); }
+.wf-card img { width: 130px; height: 130px; border-radius: 6px; object-fit: cover; }
+.wf-card b { color: var(--cream); font-size: 0.85rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* guess the length */
+.gl-val { text-align: center; font-family: monospace; font-size: 2.4rem; font-weight: bold; color: #FFD700; margin: 12px 0 4px; }
+
+/* wordle + hangman keyboard */
+.aw-grid { --t: min(46px, calc((92vw - (var(--n) * 5px)) / var(--n))); display: flex; flex-direction: column; align-items: center; gap: 5px; margin: 10px 0; }
+.aw-row { display: flex; gap: 5px; }
+.aw-t { width: var(--t); height: var(--t); display: flex; align-items: center; justify-content: center; border: 2px solid #3a1f2c; border-radius: 4px;
+  font-weight: bold; font-size: calc(var(--t) * 0.5); color: var(--cream); background: #0b0508; }
+.aw-t.gap { margin-right: calc(var(--t) * 0.35); }
+.aw-t.typed { border-color: #6a3a52; }
+.aw-t.yes, .aw-k.yes { background: #d6136f; border-color: #d6136f; color: #fff; }
+.aw-t.near, .aw-k.near { background: #b8860b; border-color: #b8860b; color: #fff; }
+.aw-t.no, .aw-k.no { background: #2a2a2a; border-color: #2a2a2a; color: #888; }
+.aw-kb { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 10px 0; }
+.aw-kb > div { display: flex; gap: 4px; }
+.aw-k { min-width: 30px; height: 44px; padding: 0 4px; border-radius: 5px; border: 1px solid #3a1f2c; background: #1a0f15; color: var(--cream);
+  font-family: inherit; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
+.aw-k.wide { min-width: 54px; font-size: 0.7rem; }
+.aw-k:disabled { cursor: default; }
+@media (max-width: 420px) { .aw-k { min-width: 26px; height: 40px; } }
+
+.hm-cover { display: flex; justify-content: center; margin: 6px 0; }
+.hm-cover img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; transition: filter 0.4s; }
+.hm-word { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; max-width: 600px; margin: 14px auto; }
+.hm-w { display: flex; gap: 4px; }
+.hm-l { width: 26px; height: 34px; border-bottom: 3px solid var(--pink); display: flex; align-items: flex-end; justify-content: center; font-weight: bold; font-size: 1.3rem; color: var(--cream); }
+.hm-l.miss { color: #ff3355; }
+.hm-p { font-size: 1.3rem; color: var(--dimtext); align-self: flex-end; }
+
+/* crossword */
+.cw-wrap { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; align-items: flex-start; }
+.cw-grid { --cw: min(34px, calc(88vw / 11)); display: grid; gap: 2px; }
+.cw-x { width: var(--cw); height: var(--cw); }
+.cw-c { position: relative; width: var(--cw); height: var(--cw); background: #fff5fa; border-radius: 2px; }
+.cw-c i { position: absolute; left: 2px; top: 0; font-size: 0.55rem; font-style: normal; color: #6a3a52; pointer-events: none; }
+.cw-c input { width: 100%; height: 100%; border: 0; background: transparent; text-align: center; font-weight: bold; font-size: calc(var(--cw) * 0.55);
+  color: #140a10; text-transform: uppercase; padding: 0; caret-color: transparent; font-family: inherit; }
+.cw-c input:focus { outline: 2px solid #d6136f; background: #ffd1e8; }
+.cw-c.hl { background: #ffc2e0; }
+.cw-c.bad input { color: #d6136f; text-decoration: line-through; }
+.cw-c.shown input { color: #8a6d00; }
+.cw-clues { display: flex; gap: 16px; flex-wrap: wrap; max-width: 520px; font-size: 0.8rem; color: var(--cream); }
+.cw-clues > div { flex: 1; min-width: 200px; }
+.cw-clues h4 { margin: 0 0 4px; color: var(--hotpink); text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; }
+.cw-clues ol { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.cw-clues b { color: #FFD700; margin-right: 4px; }
+
+/* album puzzle */
+.pz-board { --s: min(330px, 88vw); width: var(--s); height: var(--s); margin: 10px auto; display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 2px;
+  background: #0b0508; border: 2px solid var(--pink); padding: 2px; box-sizing: content-box; }
+.pz-t { border: 0; padding: 0; background-size: calc(var(--n) * 100%) calc(var(--n) * 100%); cursor: pointer; border-radius: 2px; }
+.pz-t.blank { background: #0b0508; cursor: default; }
+.pz-board.done { gap: 0; box-shadow: 0 0 24px rgba(255, 20, 147, 0.6); }
+
+/* initials */
+.in-big { text-align: center; font-family: monospace; font-size: clamp(2rem, 9vw, 3.4rem); font-weight: bold; letter-spacing: 6px; color: #FFD700; text-shadow: 0 0 14px rgba(255, 215, 0, 0.5); margin: 18px 0 8px; }
+.in-row { display: flex; justify-content: center; }
+.in-row input { width: min(420px, 90vw); }
