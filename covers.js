@@ -8,8 +8,8 @@
 // ============================================================
 
 const CV = {
-  tab: 'songs', hits: [], top: [], albums: [],
-  pick: null,          // { title, artist, kind, apple, spotify }
+  tab: 'songs', hits: [], top: [], albums: [], artists: [],
+  pick: null,          // { title, artist, apple, deezer, spotify, round }
   size: 'full', token: 0, dims: '',
 };
 const CV_SIZES = [['full', 'full size'], ['1000', '1000'], ['640', '640'], ['300', '300']];
@@ -19,6 +19,33 @@ function cvAppleUrl(base, size) {
   if (!base) return '';
   const n = size === 'full' ? 3000 : parseInt(size, 10) || 3000;
   return String(base).replace(/\/[^/]*$/, '/' + n + 'x' + n + 'bb.png');
+}
+
+// pure: deezer artist photo at any size (1500 is the biggest they hand out)
+function cvDeezerUrl(base, size) {
+  if (!base) return '';
+  const n = size === 'full' ? 1500 : parseInt(size, 10) || 1500;
+  return String(base).replace(/\/\d+x\d+-[^/]*$/, '/' + n + 'x' + n + '-000000-100-0-0.jpg');
+}
+
+// deezer's api has no cors header, but it speaks jsonp
+let cvJsonpN = 0;
+function cvJsonp(url) {
+  return new Promise((res, rej) => {
+    const cb = 'cvJp' + (++cvJsonpN) + '_' + Date.now();
+    const sc = document.createElement('script');
+    const done = v => { clearTimeout(t); delete window[cb]; sc.remove(); v instanceof Error ? rej(v) : res(v); };
+    const t = setTimeout(() => done(new Error('timeout')), 10000);
+    window[cb] = d => done(d);
+    sc.onerror = () => done(new Error('load'));
+    sc.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'output=jsonp&callback=' + cb;
+    document.head.appendChild(sc);
+  });
+}
+
+async function cvDeezerArtists(q, n) {
+  const d = await cvJsonp('https://api.deezer.com/search/artist?q=' + encodeURIComponent(q) + '&limit=' + (n || 20));
+  return ((d && d.data) || []).filter(a => a.picture_xl && !/\/artist\/\/|\/images\/artist\/\//.test(a.picture_xl));
 }
 
 // pure: loose title match so "Fallen (Deluxe Edition)" finds "Fallen"
@@ -38,6 +65,16 @@ async function cvSearch() {
   if (!q) return;
   const box = document.getElementById('cv-results');
   if (box) box.innerHTML = '<p class="q-note">looking...</p>';
+  if (CV.tab === 'artists') {
+    try {
+      CV.hits = (await cvDeezerArtists(q, 20)).map(a => ({
+        title: a.name, artist: '', sub: a.nb_fan ? Number(a.nb_fan).toLocaleString() + ' fans' : '',
+        thumb: a.picture_medium, deezer: a.picture_xl, round: true,
+      }));
+    } catch { CV.hits = []; }
+    cvRenderList();
+    return;
+  }
   const ent = CV.tab === 'albums' ? 'album' : 'song';
   try {
     const res = await fetch(ITUNES + '?term=' + encodeURIComponent(q) + '&entity=' + ent + '&limit=20');
@@ -85,10 +122,27 @@ function cvLoadTop() {
     });
     if (CV.albums.length >= 50) break;
   }
+  const ar = _data.artists || {}, seenA = new Set();
+  CV.artists = [];
+  for (const a of [...(ar.short_term || []), ...(ar.medium_term || []), ...(ar.long_term || [])]) {
+    if (!a || seenA.has(a.id)) continue;
+    seenA.add(a.id);
+    CV.artists.push({ title: a.name, artist: '', sub: '', thumb: img(a.images, 'sm'), spotify: img(a.images), round: true, findArtist: a.name });
+    if (CV.artists.length >= 50) break;
+  }
+}
+
+// spotify artist pics top out at 640 too, so look for a bigger one on deezer
+async function cvDeezerFor(name) {
+  try {
+    const want = cvNorm(name);
+    const hit = (await cvDeezerArtists(name, 5)).find(a => cvNorm(a.name) === want);
+    return hit ? hit.picture_xl : '';
+  } catch { return ''; }
 }
 
 function cvPick(list, i) {
-  const src = list === 'hits' ? CV.hits : list === 'top' ? CV.top : CV.albums;
+  const src = list === 'hits' ? CV.hits : list === 'top' ? CV.top : list === 'artists' ? CV.artists : CV.albums;
   const p = src[i]; if (!p) return;
   CV.pick = Object.assign({}, p);
   CV.dims = '';
@@ -100,6 +154,13 @@ function cvPick(list, i) {
       if (u) { CV.pick.apple = u; cvRender(); }
     });
   }
+  if (!p.deezer && p.findArtist) {
+    const token = ++CV.token;
+    cvDeezerFor(p.findArtist).then(u => {
+      if (token !== CV.token || !CV.pick) return;
+      if (u) { CV.pick.deezer = u; CV.dims = ''; cvRender(); }
+    });
+  }
   const st = document.getElementById('cv-stage');
   if (st) st.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -108,7 +169,7 @@ function cvPick(list, i) {
 
 function cvSrc() {
   const p = CV.pick; if (!p) return '';
-  return p.apple ? cvAppleUrl(p.apple, CV.size) : p.spotify;
+  return p.apple ? cvAppleUrl(p.apple, CV.size) : p.deezer ? cvDeezerUrl(p.deezer, CV.size) : p.spotify;
 }
 
 function cvLoadImg(url) {
@@ -131,7 +192,7 @@ async function cvPngBlob() {
   // spotify (jpg) or apple said no: redraw it as a png
   const im = await cvLoadImg(url);
   let w = im.naturalWidth, h = im.naturalHeight;
-  if (!CV.pick.apple && CV.size !== 'full') { const n = parseInt(CV.size, 10); if (n < w) { h = Math.round(h * n / w); w = n; } }
+  if (!CV.pick.apple && !CV.pick.deezer && CV.size !== 'full') { const n = parseInt(CV.size, 10); if (n < w) { h = Math.round(h * n / w); w = n; } }
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   c.getContext('2d').drawImage(im, 0, 0, w, h);
@@ -178,8 +239,9 @@ function cvScreen() {
   qStopAudio(); qClearTimers();
   const loggedIn = typeof _data !== 'undefined' && _data;
   if (loggedIn) cvLoadTop();
-  if (!loggedIn && (CV.tab === 'top' || CV.tab === 'mine')) CV.tab = 'songs';
-  const tabs = [['songs', 'songs'], ['albums', 'albums']].concat(loggedIn ? [['top', 'your top songs'], ['mine', 'your top albums']] : []);
+  if (!loggedIn && (CV.tab === 'top' || CV.tab === 'mine' || CV.tab === 'myartists')) CV.tab = 'songs';
+  const tabs = [['songs', 'songs'], ['albums', 'albums'], ['artists', 'artists']]
+    .concat(loggedIn ? [['top', 'your top songs'], ['mine', 'your top albums'], ['myartists', 'your top artists']] : []);
   qSet(
     qTopBar('&larr; back', xBack()) +
     qHeader('🖼️ cover saver', '') +
@@ -192,26 +254,27 @@ function cvScreen() {
 }
 
 function cvTab(k) {
-  if (k !== CV.tab && (k === 'songs' || k === 'albums')) CV.hits = [];
+  if (k !== CV.tab && (k === 'songs' || k === 'albums' || k === 'artists')) CV.hits = [];
   CV.tab = k; cvScreen();
 }
 
 function cvRow(p, list, i) {
-  return '<button class="e-row" onclick="cvPick(\'' + list + '\',' + i + ')">' +
+  return '<button class="e-row' + (p.round ? ' cv-round' : '') + '" onclick="cvPick(\'' + list + '\',' + i + ')">' +
     (p.thumb ? '<img src="' + esc(p.thumb) + '" alt="" loading="lazy">' : '<span class="ph">🎵</span>') +
-    '<span class="tx"><span class="nm">' + esc(p.title) + '</span><span class="ar">' + esc(p.artist) + (p.sub ? ' &middot; ' + esc(p.sub) : '') + '</span></span></button>';
+    '<span class="tx"><span class="nm">' + esc(p.title) + '</span><span class="ar">' + esc([p.artist, p.sub].filter(Boolean).join(' · ')) + '</span></span></button>';
 }
 
 function cvRenderSrc() {
   const box = document.getElementById('cv-src'); if (!box) return;
-  if (CV.tab === 'top' || CV.tab === 'mine') {
-    const list = CV.tab === 'top' ? CV.top : CV.albums, key = CV.tab === 'top' ? 'top' : 'mine';
+  if (CV.tab === 'top' || CV.tab === 'mine' || CV.tab === 'myartists') {
+    const key = CV.tab === 'myartists' ? 'artists' : CV.tab;
+    const list = key === 'top' ? CV.top : key === 'artists' ? CV.artists : CV.albums;
     box.innerHTML = '<div class="e-list">' + list.map((p, i) => cvRow(p, key, i)).join('') + '</div>';
     return;
   }
   box.innerHTML =
     '<div class="q-typerow" style="max-width:460px;margin:14px auto 0;">' +
-      '<input id="cv-q" class="q-input" placeholder="' + (CV.tab === 'albums' ? 'any album...' : 'any song...') + '" autocomplete="off" spellcheck="false">' +
+      '<input id="cv-q" class="q-input" placeholder="' + (CV.tab === 'albums' ? 'any album...' : CV.tab === 'artists' ? 'any artist...' : 'any song...') + '" autocomplete="off" spellcheck="false">' +
       '<button class="q-btn" onclick="cvSearch()">search</button>' +
     '</div>' +
     '<div id="cv-results"></div>';
@@ -243,6 +306,6 @@ function cvRender() {
     '</div>';
 }
 
-X_HUB.labs.push(() => xCard('🖼️', 'cover saver', 'any song or album cover as a png', 'cvOpen()'));
+X_HUB.labs.push(() => xCard('🖼️', 'cover saver', 'any song, album or artist pic as a png', 'cvOpen()'));
 
 Object.assign(window, { cvOpen, cvScreen, cvTab, cvSearch, cvPick, cvSize, cvSave, cvDims });
