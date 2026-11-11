@@ -1,0 +1,3 @@
+/* cover saver (covers.js) */
+.cv-big { display: block; width: 100%; max-width: 360px; aspect-ratio: 1; object-fit: cover; margin: 0 auto 12px; border-radius: 10px; border: 1px solid var(--pink); box-shadow: var(--glow); background: #222; }
+#cv-stage { scroll-margin-top: 80px; }
